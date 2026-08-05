@@ -120,6 +120,7 @@
     .privacy { margin: 11px 0 0; text-align: center; color: #8a9390; font-size: .64rem; }
     .consent { margin-top: 20px; display: grid; grid-template-columns: 18px 1fr; gap: 11px; align-items: start; color: var(--muted); font-size: .7rem; font-weight: 400; line-height: 1.5; cursor: pointer; }
     .consent input { width: 17px; height: 17px; margin: 1px 0 0; accent-color: var(--accent); }
+    .hp-field { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
     .result { display: none; grid-column: 1/-1; grid-template-columns: minmax(320px, .8fr) minmax(0, 1.2fr); min-height: 0; }
     .result.show { display: grid; }
     .result-copy { padding: 50px clamp(30px,5vw,64px); display: flex; flex-direction: column; justify-content: center; }
@@ -621,7 +622,9 @@
             <label><span>Email <em>optional</em></span><input id="email" type="email" autocomplete="email" placeholder="you@example.com"></label>
           </div>
           <label class="consent"><input id="consent" type="checkbox" required><span>I’m happy for CRS Roofing to contact me about this roofing enquiry.</span></label>
-          <button class="primary" type="submit">Reveal my estimate <span>→</span></button>
+          <label class="hp-field" aria-hidden="true"><span>Website</span><input id="website" type="text" tabindex="-1" autocomplete="off"></label>
+          <div class="notice" id="contact-notice" role="alert" aria-live="polite"></div>
+          <button class="primary" id="contact-submit" type="submit">Reveal my estimate <span>→</span></button>
         </form>
       </div>
 
@@ -710,7 +713,7 @@
     };
 
     const $ = (selector) => document.querySelector(selector);
-    const state = { step: 1, distance: 0, postcode: "", pitchedCovering: "" };
+    const state = { step: 1, distance: 0, postcode: "", pitchedCovering: "", submissionId: "" };
     const money = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 });
 
     function distanceMiles(latA, lonA, latB, lonB) {
@@ -835,8 +838,7 @@
       }
     });
 
-    $("#contact-form").addEventListener("submit", event => {
-      event.preventDefault();
+    function calculateQuote() {
       const { width, length, height, profile, covering } = roofValues();
       const area = width * length;
       const profileDetails = PRICING.roofProfiles[profile];
@@ -844,6 +846,12 @@
       const calculated = area * coveringDetails.ratePerSquareMetre + PRICING.materialsAllowance;
       const estimateBase = area <= PRICING.minimumArea ? PRICING.minimumEstimate : Math.max(PRICING.minimumEstimate, calculated);
       const estimate = Math.round((estimateBase * profileDetails.multiplier) / 50) * 50;
+
+      return { width, length, height, profile, covering, area, profileDetails, coveringDetails, estimate };
+    }
+
+    function revealEstimate(quote) {
+      const { height, profile, covering, area, profileDetails, coveringDetails, estimate } = quote;
       $("#result-heading").textContent = "Your quote";
       $("#price-estimate").textContent = money.format(estimate);
       $("#sum-area").textContent = area.toFixed(1) + " m²";
@@ -860,6 +868,57 @@
       $("#calculator").classList.add("result-mode");
       $("#result").classList.add("show");
       $("#calculator").scrollIntoView({ behavior: "smooth" });
+    }
+
+    $("#contact-form").addEventListener("submit", async event => {
+      event.preventDefault();
+
+      const quote = calculateQuote();
+      const button = $("#contact-submit");
+      const notice = $("#contact-notice");
+      state.submissionId ||= crypto.randomUUID();
+      notice.className = "notice";
+      notice.textContent = "";
+      button.disabled = true;
+      button.textContent = "Sending your details…";
+
+      try {
+        const response = await fetch("/api/enquiry", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            submissionId: state.submissionId,
+            website: $("#website").value,
+            name: $("#name").value,
+            phone: $("#phone").value,
+            email: $("#email").value,
+            consent: $("#consent").checked,
+            postcode: state.postcode,
+            distance: state.distance,
+            width: quote.width,
+            length: quote.length,
+            height: quote.height,
+            profile: quote.profile,
+            covering: quote.covering
+          })
+        });
+
+        const contentType = response.headers.get("content-type") || "";
+        const data = contentType.includes("application/json") ? await response.json() : null;
+
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || "We couldn’t send your enquiry. Please try again.");
+        }
+
+        if (Number.isFinite(data.estimate)) quote.estimate = data.estimate;
+        revealEstimate(quote);
+      } catch (error) {
+        notice.textContent = error.message + " If it keeps happening, call CRS Roofing on 0118 230 2060.";
+        notice.classList.add("show");
+      } finally {
+        button.disabled = false;
+        button.innerHTML = "Reveal my estimate <span>→</span>";
+      }
     });
 
   </script>

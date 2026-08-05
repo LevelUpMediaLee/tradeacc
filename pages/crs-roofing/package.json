@@ -2,5 +2,12 @@
   "name": "@tradeaccelerator/page-crs-roofing",
   "version": "1.0.0",
   "private": true,
-  "description": "CRS Roofing estimate calculator"
+  "type": "module",
+  "description": "CRS Roofing estimate calculator",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "check": "node --check api/enquiry.js"
+  }
 }

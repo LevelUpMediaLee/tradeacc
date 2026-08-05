@@ -29,10 +29,12 @@ const projects = [
       "assets/roof-footprint.png",
       "assets/roof-height.png",
       "assets/slate.jpg",
+      ".env.example",
+      "api/enquiry.js",
       "package.json",
       "vercel.json"
     ],
-    checkJavaScript: []
+    checkJavaScript: ["api/enquiry.js"]
   }
 ];
 
