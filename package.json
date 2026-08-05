@@ -1,0 +1,13 @@
+{
+  "name": "trade-accelerator-vercel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Trade Accelerator bots and landing pages deployed as independent Vercel projects.",
+  "workspaces": [
+    "bots/*",
+    "pages/*"
+  ],
+  "scripts": {
+    "check": "node scripts/validate-projects.mjs"
+  }
+}

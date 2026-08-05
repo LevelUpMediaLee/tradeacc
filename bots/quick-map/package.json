@@ -1,0 +1,13 @@
+{
+  "name": "@tradeaccelerator/bot-quick-map",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Trade Accelerator Quick Marketing Map",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "check": "node --check api/chat.js"
+  }
+}

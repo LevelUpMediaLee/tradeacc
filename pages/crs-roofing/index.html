@@ -1,0 +1,867 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CRS Roofing roof estimate calculator">
+  <title>Roof Estimate Calculator | CRS Roofing</title>
+  <link rel="icon" href="https://tradeacceleratorltd.com/wp-content/uploads/2026/07/cropped-faviconta-300x300.png" type="image/png">
+  <style>
+    :root {
+      --ink: #333333;
+      --muted: #717171;
+      --paper: #333333;
+      --card: #ffffff;
+      --soft-gold: #f5f1e7;
+      --accent: #c1a961;
+      --accent-dark: #9c874a;
+      --line: #dedede;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      padding: 28px 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image:
+        linear-gradient(rgba(20, 20, 20, .50), rgba(20, 20, 20, .64)),
+        url("assets/luxury-roof-background.jpg");
+      background-position: center;
+      background-size: cover;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      font: 16px/1.5 Arial, Helvetica, sans-serif;
+    }
+    p { line-height: 1.35em; }
+    button, input { font: inherit; }
+    .kicker { margin: 0 0 17px; color: var(--accent-dark); font-size: .73rem; font-weight: 500; letter-spacing: .15em; text-transform: uppercase; }
+    h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-weight: 400; letter-spacing: -.05em; line-height: 1; }
+    h2 { font-size: clamp(2.15rem, 4vw, 3.35rem); }
+    .calculator { min-height: 640px; margin-bottom: 38px; display: grid; grid-template-columns: 34% 66%; background: var(--card); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 24px 70px rgba(0,0,0,.28); }
+    #calculator { width: min(1160px, calc(100% - 40px)); margin: 0 auto; }
+    @media (min-width: 821px) {
+      body { padding: 50px 0; }
+      #calculator { width: min(1160px, calc(100% - 80px)); }
+    }
+    #calculator.result-mode { min-height: 0; display: block; border: 0; background: transparent; box-shadow: none; }
+    #calculator.result-mode .progress,
+    #calculator.result-mode .panel { display: none !important; }
+    #calculator.result-mode .result { width: 100%; display: grid; background: var(--card); border: 1px solid rgba(255,255,255,.12); box-shadow: 0 24px 70px rgba(0,0,0,.28); }
+    .progress { padding: 42px 45px 38px; display: flex; flex-direction: column; background: linear-gradient(150deg, #3d3d3d, #292929); color: white; }
+    .brand-logo { width: min(175px, 75%); height: 145px; margin: 0 auto 28px; display: block; object-fit: contain; }
+    .progress-label { margin: 0 0 32px; color: var(--accent); font-size: .72rem; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+    .steps { list-style: none; padding: 0; margin: 0; }
+    .steps li { position: relative; min-height: 94px; display: flex; gap: 16px; color: #71807a; }
+    .steps li:not(:last-child)::after { content: ""; position: absolute; left: 17px; top: 40px; width: 1px; height: 42px; background: #44504c; }
+    .num { width: 36px; height: 36px; flex: 0 0 36px; display: grid; place-items: center; border: 1px solid #53615c; border-radius: 50%; font-size: .77rem; font-weight: 500; }
+    .steps strong { display: block; padding-top: 2px; font-size: .9rem; }
+    .steps small { display: block; margin-top: 5px; color: #71807a; font-size: .7rem; }
+    .steps li.active { color: white; }
+    .steps li.active .num { border-color: var(--accent); background: var(--accent); color: #333; box-shadow: 0 0 0 7px rgba(193,169,97,.16); }
+    .steps li.done { color: #e8dfc3; }
+    .steps li.done .num { border-color: var(--accent); color: var(--accent); }
+    .assurance { margin-top: auto; padding-top: 25px; border-top: 1px solid #3a4541; color: #aeb9b4; font-size: .72rem; line-height: 1.35em; }
+    .assurance strong { display: block; margin-bottom: 5px; color: var(--accent); }
+    .panel { padding: 62px clamp(34px, 7vw, 88px); }
+    .form-screen { display: none; max-width: 620px; }
+    .form-screen.active { display: block; }
+    .form-intro { max-width: 560px; margin: 17px 0 30px; color: var(--muted); font-size: .9rem; line-height: 1.35em; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 17px; }
+    label { display: block; color: var(--ink); font-size: .76rem; font-weight: 500; }
+    label > span:first-child { display: block; margin-bottom: 8px; }
+    label em { margin-left: 5px; color: #8a9390; font-size: .66rem; font-weight: 400; font-style: normal; }
+    input[type="text"], input[type="number"], input[type="tel"], input[type="email"] { width: 100%; height: 55px; padding: 0 15px; border: 1px solid var(--line); border-radius: 2px; background: #fcfcf9; color: var(--ink); outline: none; }
+    input:focus { border-color: var(--accent); background: white; box-shadow: 0 0 0 4px rgba(193,169,97,.18); }
+    .full { margin-top: 19px; }
+    .unit { position: relative; display: block; }
+    .unit input { padding-right: 72px; }
+    .unit b { position: absolute; right: 14px; top: 19px; color: #8c9491; font-size: .68rem; }
+    .help { display: block; margin-top: 7px; color: #858e8b; font-size: .66rem; font-weight: 400; }
+    .covering-fieldset { margin: 22px 0 0; padding: 0; border: 0; }
+    .covering-fieldset legend { margin-bottom: 9px; color: var(--ink); font-size: .76rem; font-weight: 500; }
+    .profile-fieldset { margin: 0 0 24px; padding: 0; border: 0; }
+    .profile-fieldset legend { margin-bottom: 10px; color: var(--ink); font-size: 16px; font-weight: 500; }
+    .profile-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .profile-option { position: relative; cursor: pointer; }
+    .profile-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .profile-option > .profile-card { margin: 0; }
+    .profile-card { min-height: 86px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease; }
+    .profile-card strong { font-size: 15px; font-weight: 500; }
+    .profile-symbol { position: relative; width: 52px; height: 38px; flex: 0 0 52px; display: block; }
+    .profile-symbol::before,
+    .profile-symbol::after { content: ""; position: absolute; display: block; background: var(--accent); border-radius: 3px; }
+    .profile-symbol.flat::before { left: 3px; top: 8px; width: 46px; height: 3px; }
+    .profile-symbol.flat::after { left: 8px; top: 11px; width: 36px; height: 21px; border-right: 2px solid var(--accent); border-bottom: 2px solid var(--accent); border-left: 2px solid var(--accent); background: transparent; border-radius: 0 0 3px 3px; }
+    .profile-symbol.pitched::before { left: 4px; top: 12px; width: 29px; height: 3px; transform: rotate(-35deg); transform-origin: right center; }
+    .profile-symbol.pitched::after { right: 4px; top: 12px; width: 29px; height: 3px; transform: rotate(35deg); transform-origin: left center; }
+    .profile-option:hover .profile-card { transform: translateY(-2px); border-color: rgba(193,169,97,.7); box-shadow: 0 8px 18px rgba(51,51,51,.08); }
+    .profile-option input:checked + .profile-card { border-color: var(--accent); background: var(--soft-gold); box-shadow: 0 0 0 3px rgba(193,169,97,.18); }
+    .profile-option input:focus-visible + .profile-card { outline: 3px solid rgba(193,169,97,.3); outline-offset: 2px; }
+    .covering-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .covering-option { position: relative; cursor: pointer; }
+    .covering-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .covering-card { min-height: 92px; padding: 14px 12px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid var(--line); background: #fbfbfb; transition: border-color .15s, background .15s, box-shadow .15s; }
+    .covering-card strong { font-size: .75rem; }
+    .covering-card small { color: var(--muted); font-size: .65rem; font-weight: 400; }
+    .covering-option input:checked + .covering-card { border-color: var(--accent); background: var(--soft-gold); box-shadow: inset 0 0 0 1px var(--accent); }
+    .covering-option input:focus-visible + .covering-card { outline: 3px solid rgba(193,169,97,.3); outline-offset: 2px; }
+    .live { margin-top: 21px; padding: 13px 16px; display: flex; justify-content: space-between; background: var(--soft-gold); border-left: 3px solid var(--accent); color: var(--muted); font-size: .74rem; }
+    .live strong { color: var(--ink); font-size: .92rem; }
+    .primary { width: 100%; min-height: 56px; margin-top: 25px; padding: 0 20px; border: 0; border-radius: 2px; display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--accent); color: #292929; font-size: .78rem; font-weight: 500; cursor: pointer; }
+    .primary:hover:not(:disabled) { background: #d0bb7b; }
+    .primary:disabled { cursor: not-allowed; background: #c9cecb; }
+    .back { margin: -23px 0 22px; padding: 6px 0; border: 0; background: transparent; color: var(--muted); font-size: .72rem; font-weight: 500; cursor: pointer; }
+    .postcode { text-transform: uppercase; letter-spacing: .08em; font-weight: 500; }
+    .notice { margin-top: 17px; padding: 15px 17px; display: none; border-left: 3px solid #b45445; background: #f8e9e5; color: #803b31; font-size: .74rem; line-height: 1.5; }
+    .notice.show { display: block; }
+    .notice.outside { border-color: var(--accent); background: var(--soft-gold); color: #66572d; }
+    .privacy { margin: 11px 0 0; text-align: center; color: #8a9390; font-size: .64rem; }
+    .consent { margin-top: 20px; display: grid; grid-template-columns: 18px 1fr; gap: 11px; align-items: start; color: var(--muted); font-size: .7rem; font-weight: 400; line-height: 1.5; cursor: pointer; }
+    .consent input { width: 17px; height: 17px; margin: 1px 0 0; accent-color: var(--accent); }
+    .result { display: none; grid-column: 1/-1; grid-template-columns: minmax(320px, .8fr) minmax(0, 1.2fr); min-height: 0; }
+    .result.show { display: grid; }
+    .result-copy { padding: 50px clamp(30px,5vw,64px); display: flex; flex-direction: column; justify-content: center; }
+    .result-copy > p:not(.kicker):not(.disclaimer) { margin: 19px 0 11px; color: var(--muted); line-height: 1.35em; }
+    .price { margin: 8px 0 20px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font: clamp(2.4rem,5vw,4.35rem) Georgia, serif; letter-spacing: -.05em; }
+    .price .approx { color: var(--accent-dark); font-size: 15px; font-weight: 600; letter-spacing: 0; text-transform: uppercase; }
+    #price-estimate { font-weight: 700; }
+    .disclaimer { margin: 0; padding-top: 17px; border-top: 1px solid var(--line); color: #7c8581; font-size: .68rem; line-height: 1.35em; }
+    .result-contact {
+      margin-top: 25px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .result-contact a {
+      width: 100%;
+      min-height: 56px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.35;
+      text-align: center;
+      text-decoration: none;
+      overflow-wrap: anywhere;
+      transition: border-color .18s ease, background .18s ease, color .18s ease;
+    }
+    .contact-icon { width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; border-radius: 50%; background: var(--soft-gold); color: var(--accent-dark); font-size: 14px; }
+    .result-contact a > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+    .result-contact a:hover,
+    .result-contact a:focus-visible {
+      border-color: var(--accent);
+      background: var(--soft-gold);
+      color: var(--accent-dark);
+      outline: none;
+    }
+    .summary { margin: 22px 22px 22px 0; padding: 22px; display: flex; flex-direction: column; gap: 10px; background: linear-gradient(150deg, #3d3d3d, #292929); color: white; }
+    .summary-title { margin: 0 0 4px; color: var(--accent); font-size: 14px; font-weight: 500; letter-spacing: .13em; text-transform: uppercase; }
+    .visual-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .summary-card,
+    .location-summary { border: 1px solid rgba(255,255,255,.16); border-radius: 14px; background: rgba(255,255,255,.025); }
+    .summary-card { min-height: 158px; padding: 12px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; }
+    .summary-card h3,
+    .location-summary h3 { margin: 0; color: #fff; font-size: 13px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; }
+    .footprint-visual { position: relative; width: 100%; min-height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .footprint-diagram { width: 108px; height: 78px; }
+    .footprint-image { width: 108px; height: 78px; display: block; object-fit: contain; }
+    .area-badge { margin-top: 4px; padding: 0; border: 0; background: transparent; color: var(--accent); font-size: 15px; font-weight: 500; line-height: 1; }
+    .height-visual { position: relative; width: 100%; min-height: 104px; display: flex; align-items: flex-end; justify-content: center; }
+    .height-diagram { position: relative; width: 166px; height: 88px; }
+    .height-image { width: 104px; height: 88px; display: block; object-fit: contain; }
+    .height-arrow { position: absolute; right: 4px; top: 8px; bottom: 8px; width: 1px; background: var(--accent); }
+    .height-arrow::before,
+    .height-arrow::after { content: ""; position: absolute; left: -4px; border-left: 4px solid transparent; border-right: 4px solid transparent; }
+    .height-arrow::before { top: -1px; border-bottom: 7px solid var(--accent); }
+    .height-arrow::after { bottom: -1px; border-top: 7px solid var(--accent); }
+    .height-value { position: absolute; right: 18px; top: 50%; color: var(--accent); font-size: 13px; font-weight: 500; transform: translateY(-50%); }
+    .summary-card-label { margin: 6px 0 0; color: #bbb; font-size: 11px; }
+    .covering-preview { width: 84px; height: 58px; margin: 8px 0; object-fit: cover; border-radius: 8px; }
+    .covering-name { margin: 0; color: #fff; font-size: 15px; font-weight: 500; }
+    .covering-rate { margin: 2px 0 0; color: var(--accent); font-size: 13px; font-weight: 500; }
+    .profile-summary-name { margin: 4px 0 0; color: #fff; font-size: 15px; font-weight: 500; }
+    .summary-card .profile-symbol { margin: 10px 0 5px; transform: scale(1.08); }
+    .location-summary { padding: 12px 14px; }
+    .location-summary h3 { text-align: center; }
+    .location-route { margin-top: 12px; display: grid; grid-template-columns: minmax(82px, 1fr) minmax(90px, 1.35fr) minmax(82px, 1fr); align-items: center; gap: 8px; }
+    .location-stop { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 7px; color: #fff; font-size: 12px; font-weight: 500; line-height: 1.25; text-align: center; overflow-wrap: anywhere; }
+    .location-pin { position: relative; width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--accent); transform: rotate(-45deg); }
+    .location-pin::after { content: ""; position: absolute; width: 6px; height: 6px; left: 5px; top: 5px; border-radius: 50%; background: #303030; }
+    .route-connection { position: relative; height: 34px; display: flex; align-items: flex-end; justify-content: center; border-top: 1px dotted var(--accent); }
+    .distance-badge { margin-top: 6px; padding: 5px 10px; border: 1px solid var(--accent); border-radius: 999px; color: #fff; font-size: 12px; font-weight: 500; line-height: 1; white-space: nowrap; }
+    .next { margin: 0; padding: 16px 18px; background: linear-gradient(-35deg, var(--accent), #d6c17d); border: 0; color: #292929; box-shadow: 0 8px 20px rgba(0,0,0,.16); font-size: 13px; font-weight: 500; line-height: 1.35em; }
+    .next strong { display: block; margin-bottom: 5px; color: #292929; font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+    @media (max-width: 980px) {
+      .result { grid-template-columns: 1fr; }
+      .summary { margin: 0 22px 22px; }
+    }
+    @media (max-width: 820px) {
+      .calculator { grid-template-columns: 1fr; }
+      .progress { padding: 25px 28px; }
+      .brand-logo { width: 110px; height: 82px; margin: 0 18px 16px 0; }
+      .progress-label, .assurance, .steps small { display: none; }
+      .steps { display: grid; grid-template-columns: repeat(3,1fr); }
+      .steps li { min-height: 36px; align-items: center; gap: 9px; }
+      .steps li:not(:last-child)::after { display: none; }
+      .steps strong { font-size: .7rem; }
+      .num { width: 28px; height: 28px; flex-basis: 28px; }
+      .panel { padding-block: 52px; }
+      .result { grid-template-columns: 1fr; }
+      .summary { margin: 0 22px 22px; min-height: 0; }
+    }
+    @media (max-width: 560px) {
+      body {
+        padding: 12px 0;
+        background-position: 58% center;
+        background-attachment: scroll;
+      }
+      #calculator { width: calc(100% - 24px); }
+      .progress { padding: 19px 15px; }
+      .steps strong { display: none; }
+      .steps li { justify-content: center; }
+      .panel { padding: 47px 21px 40px; }
+      .grid { grid-template-columns: 1fr; }
+      .covering-options { grid-template-columns: 1fr; }
+      .covering-card { min-height: 70px; }
+      .result-copy { padding: 52px 22px 40px; }
+      .result-contact { grid-template-columns: 1fr; }
+      .summary { margin: 0 11px 11px; padding: 18px; }
+      .visual-summary-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Softer, full-width calculator layout */
+    .calculator {
+      display: block;
+      overflow: hidden;
+      border-radius: 10px;
+    }
+    .progress {
+      position: relative;
+      width: 100%;
+      padding: 24px 32px;
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      align-items: center;
+      gap: 30px;
+      border-radius: 10px 10px 0 0;
+    }
+    .brand-logo {
+      width: 92px;
+      height: 70px;
+      margin: 0;
+    }
+    .progress-label,
+    .assurance { display: none; }
+    .steps {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .steps li {
+      position: relative;
+      min-height: 40px;
+      align-items: center;
+      gap: 12px;
+      color: #929292;
+    }
+    .steps li:not(:last-child)::after {
+      position: static;
+      flex: 1 1 auto;
+      width: auto;
+      height: 1px;
+      margin-right: 18px;
+      background: #5d5d5d;
+    }
+    .steps strong {
+      padding: 0;
+      color: inherit;
+      font-size: .78rem;
+      letter-spacing: .04em;
+    }
+    .num {
+      width: 38px;
+      height: 38px;
+      flex-basis: 38px;
+    }
+    .panel {
+      padding: 48px clamp(28px, 5vw, 64px) 56px;
+      border-radius: 0 0 10px 10px;
+    }
+    .form-screen { max-width: none; }
+    .form-screen > h2,
+    .form-screen > .kicker,
+    .form-screen > .form-intro { max-width: 700px; }
+    .details-layout {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(420px, 1.1fr);
+      gap: clamp(28px, 5vw, 64px);
+      align-items: start;
+    }
+    .measurements-column,
+    .covering-fieldset {
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fafafa;
+    }
+    .measurements-column {
+      padding: 0;
+      border: 0;
+      box-shadow: 0 8px 28px rgba(51, 51, 51, .06);
+    }
+    .covering-column {
+      display: flex;
+      flex-direction: column;
+    }
+    .covering-fieldset { margin: 0; }
+    .covering-fieldset legend {
+      padding: 0 5px;
+      font-size: .8rem;
+    }
+    .covering-options {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .covering-options.single-option { grid-template-columns: minmax(0, 1fr); }
+    .covering-option[hidden] { display: none; }
+    .covering-card {
+      min-height: 190px;
+      padding: 8px 8px 13px;
+      gap: 12px;
+      border-radius: 14px;
+      background: white;
+      overflow: hidden;
+    }
+    .covering-card img {
+      width: 100%;
+      height: 128px;
+      display: block;
+      object-fit: cover;
+      border-radius: 9px;
+    }
+    .covering-card strong {
+      padding: 0 5px;
+      font-size: .78rem;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="email"] { border-radius: 10px; }
+    .live,
+    .notice,
+    .next { border-radius: 10px; }
+    .primary { border-radius: 12px; }
+    .back { border-radius: 8px; }
+    .result,
+    #calculator.result-mode .result { overflow: hidden; border-radius: 10px; }
+    .summary { border-radius: 16px; }
+    .consent input { border-radius: 4px; }
+
+    @media (max-width: 920px) {
+      .details-layout { grid-template-columns: 1fr; }
+      .covering-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 620px) {
+      .progress {
+        padding: 18px 16px;
+        grid-template-columns: 56px minmax(0, 1fr);
+        gap: 12px;
+      }
+      .brand-logo { width: 56px; height: 48px; margin: 0; }
+      .steps li { justify-content: flex-start; gap: 6px; }
+      .steps strong { display: block; font-size: .63rem; }
+      .num { width: 29px; height: 29px; flex-basis: 29px; }
+      .steps li:not(:last-child)::after { margin-right: 8px; }
+      .panel { padding: 38px 18px 42px; }
+      .covering-fieldset { padding: 16px; }
+      .profile-options { grid-template-columns: 1fr 1fr; }
+      .covering-options { grid-template-columns: 1fr; }
+      .covering-card {
+        min-height: 112px;
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        align-items: center;
+      }
+      .covering-card img { height: 94px; }
+    }
+
+    /* Typography and interactive tile-card refinement */
+    body,
+    button,
+    input {
+      font-family: "Century Gothic", "Avenir Next", Futura, "Helvetica Neue", Arial, sans-serif;
+    }
+    strong,
+    b { font-weight: 500; }
+    h2,
+    .price {
+      font-family: "Century Gothic", "Avenir Next", Futura, "Helvetica Neue", Arial, sans-serif;
+      font-weight: 400;
+      letter-spacing: -.035em;
+    }
+    h2 {
+      font-weight: 600;
+      letter-spacing: 0;
+    }
+    label,
+    .covering-fieldset legend,
+    input[type="text"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="email"],
+    .primary {
+      font-size: 16px;
+    }
+    .primary {
+      font-weight: 600;
+      letter-spacing: 0;
+    }
+    .form-intro { font-size: 16px; }
+    .help { font-size: 14px; line-height: 1.5; }
+    .unit b { top: 17px; font-size: 13px; }
+    .live { font-size: 14px; }
+    .live strong { font-size: 16px; }
+    .consent { font-size: 14px; }
+    .back { font-size: 14px; }
+    .privacy { font-size: 13px; }
+    .steps strong { font-size: 14px; }
+
+    .covering-card {
+      position: relative;
+      min-height: 192px;
+      padding: 0;
+      display: block;
+      border: 2px solid transparent;
+      background: #333;
+      cursor: pointer;
+      transform: translateY(0);
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .covering-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: linear-gradient(to top, rgba(0,0,0,.42), transparent 52%);
+      pointer-events: none;
+    }
+    .covering-card::after {
+      content: "✓";
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 3;
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #292929;
+      font-size: 15px;
+      font-weight: 500;
+      opacity: 0;
+      transform: scale(.7);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .covering-card img {
+      width: 100%;
+      height: 192px;
+      border-radius: 12px;
+      transition: transform .25s ease, filter .2s ease;
+    }
+    .covering-card strong {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 2;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(51,51,51,.88);
+      color: #fff;
+      font-size: 14px;
+      line-height: 1;
+      letter-spacing: .02em;
+      backdrop-filter: blur(5px);
+      transition: background .18s ease, color .18s ease;
+    }
+    .covering-option:hover .covering-card {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 24px rgba(0,0,0,.18);
+    }
+    .covering-option:hover .covering-card img {
+      transform: scale(1.035);
+      filter: brightness(1.04);
+    }
+    .covering-option input:checked + .covering-card {
+      border-color: var(--accent);
+      background: #333;
+      box-shadow: 0 0 0 3px rgba(193,169,97,.24), 0 12px 25px rgba(0,0,0,.18);
+    }
+    .covering-option input:checked + .covering-card strong {
+      background: #fff;
+      color: var(--accent);
+    }
+    .covering-option input:checked + .covering-card::after {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .covering-option input:checked + .covering-card img {
+      filter: brightness(.9);
+    }
+    .covering-column #roof-next {
+      margin: 16px 0 0;
+    }
+
+    @media (max-width: 620px) {
+      .steps strong { font-size: 12px; }
+      .profile-card { min-height: 96px; padding: 10px 8px; flex-direction: column; justify-content: center; gap: 6px; text-align: center; }
+      .covering-card {
+        min-height: 126px;
+        display: block;
+      }
+      .covering-card img { height: 126px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator" id="calculator" aria-label="Roof estimate calculator">
+      <aside class="progress" id="progress">
+        <img class="brand-logo" src="assets/crs-logo.png" alt="CRS Roofing">
+        <p class="progress-label">Your estimate</p>
+        <ol class="steps">
+          <li class="active" data-progress="1"><span class="num">1</span><span><strong>Details</strong></span></li>
+          <li data-progress="2"><span class="num">2</span><span><strong>Location</strong></span></li>
+          <li data-progress="3"><span class="num">3</span><span><strong>Info</strong></span></li>
+        </ol>
+        <p class="assurance"><strong>CRS Roofing</strong>Measurements give us a useful starting point. A site visit confirms the final quotation.</p>
+      </aside>
+
+      <div class="panel" id="forms">
+        <form class="form-screen active" id="roof-form" data-step="1">
+          <p class="kicker">Step 1 of 3</p>
+          <h2>Let’s size up your roof</h2>
+          <p class="form-intro">Rough measurements are fine.</p>
+          <div class="details-layout">
+            <div class="measurements-column">
+              <fieldset class="profile-fieldset">
+                <legend>What shape is the roof?</legend>
+                <div class="profile-options">
+                  <label class="profile-option">
+                    <input type="radio" name="profile" value="flat" required>
+                    <span class="profile-card"><span class="profile-symbol flat" aria-hidden="true"></span><strong>Flat roof</strong></span>
+                  </label>
+                  <label class="profile-option">
+                    <input type="radio" name="profile" value="pitched" required>
+                    <span class="profile-card"><span class="profile-symbol pitched" aria-hidden="true"></span><strong>Pitched roof</strong></span>
+                  </label>
+                </div>
+              </fieldset>
+              <div class="grid">
+                <label><span>Roof width</span><span class="unit"><input id="width" type="number" min="2" max="40" step="0.1" placeholder="e.g. 8.5" required><b>metres</b></span></label>
+                <label><span>Roof length</span><span class="unit"><input id="length" type="number" min="2" max="40" step="0.1" placeholder="e.g. 11" required><b>metres</b></span></label>
+              </div>
+              <label class="full"><span>Height to the roof edge</span><span class="unit"><input id="height" type="number" min="2" max="15" step="0.1" placeholder="Ground to gutter, e.g. 5.5" required><b>metres</b></span><small class="help">This helps us understand access and scaffolding requirements.</small></label>
+              <div class="live" id="area-readout" hidden><span>Estimated roof footprint</span><strong id="area-value">0 m²</strong></div>
+            </div>
+            <div class="covering-column">
+            <fieldset class="covering-fieldset">
+              <legend>Choose your roof covering</legend>
+              <div class="covering-options" id="covering-options">
+                <label class="covering-option" data-profile-covering="pitched">
+                  <input type="radio" name="covering" value="plain" required>
+                  <span class="covering-card"><img src="assets/plain-tile.jpg" alt="Close-up of plain roof tiles"><strong>Plain tile</strong></span>
+                </label>
+                <label class="covering-option" data-profile-covering="pitched">
+                  <input type="radio" name="covering" value="pan" required>
+                  <span class="covering-card"><img src="assets/pan-tile.jpg" alt="Close-up of pan roof tiles"><strong>Pan tile</strong></span>
+                </label>
+                <label class="covering-option" data-profile-covering="pitched">
+                  <input type="radio" name="covering" value="slate" required>
+                  <span class="covering-card"><img src="assets/slate.jpg" alt="Close-up of slate roofing"><strong>Slate</strong></span>
+                </label>
+                <label class="covering-option" data-profile-covering="flat" hidden>
+                  <input type="radio" name="covering" value="felt" disabled>
+                  <span class="covering-card"><img src="assets/felt.jpg" alt="Close-up of roofing felt on a flat roof"><strong>Felt</strong></span>
+                </label>
+              </div>
+            </fieldset>
+            <button class="primary" id="roof-next" type="submit" disabled>Continue to location <span>→</span></button>
+            </div>
+          </div>
+        </form>
+
+        <form class="form-screen" id="postcode-form" data-step="2">
+          <button class="back" type="button" data-back="1">← Back</button>
+          <p class="kicker">Step 2 of 3</p>
+          <h2>Where are you?</h2>
+          <p class="form-intro">Let us know where your property is</p>
+          <label class="full"><span>Property postcode</span><input class="postcode" id="postcode" type="text" autocomplete="postal-code" placeholder="e.g. RG4 9SL" required></label>
+          <div class="notice" id="postcode-notice" role="alert"></div>
+          <button class="primary" id="postcode-next" type="submit">Continue <span>→</span></button>
+        </form>
+
+        <form class="form-screen" id="contact-form" data-step="3">
+          <button class="back" type="button" data-back="2">← Back</button>
+          <p class="kicker">Step 3 of 3</p>
+          <h2>Your estimate is ready</h2>
+          <p class="form-intro">Where should CRS Roofing follow up if you’d like to turn this estimate into a fixed quote?</p>
+          <label class="full"><span>Your name</span><input id="name" type="text" autocomplete="name" placeholder="Full name" required></label>
+          <div class="grid full">
+            <label><span>Phone number</span><input id="phone" type="tel" autocomplete="tel" placeholder="Best number to reach you" required></label>
+            <label><span>Email <em>optional</em></span><input id="email" type="email" autocomplete="email" placeholder="you@example.com"></label>
+          </div>
+          <label class="consent"><input id="consent" type="checkbox" required><span>I’m happy for CRS Roofing to contact me about this roofing enquiry.</span></label>
+          <button class="primary" type="submit">Reveal my estimate <span>→</span></button>
+        </form>
+      </div>
+
+      <div class="result" id="result" aria-live="polite">
+        <div class="result-copy">
+          <p class="kicker">Your rough estimate</p>
+          <h2 id="result-heading">Your quote</h2>
+          <p>Based on the measurements you entered, here is a rough cost for the work:</p>
+          <div class="price"><span class="approx">Approx.</span><span id="price-estimate">£0</span></div>
+          <p class="disclaimer">Roof condition, access, material quantities and structural work can change the final price. VAT treatment is confirmed with the formal quote.</p>
+          <div class="result-contact" aria-label="Contact CRS Roofing">
+            <a href="tel:+441182302060"><span class="contact-icon" aria-hidden="true">☎</span><span>0118 230 2060</span></a>
+            <a href="mailto:info@crsroofing-reading.co.uk"><span class="contact-icon" aria-hidden="true">✉</span><span>info@crsroofing-reading.co.uk</span></a>
+          </div>
+        </div>
+        <aside class="summary">
+          <p class="summary-title">Summary</p>
+          <div class="visual-summary-grid">
+            <section class="summary-card" aria-labelledby="profile-title">
+              <h3 id="profile-title">Roof profile</h3>
+              <span class="profile-symbol" id="sum-profile-icon" aria-hidden="true"></span>
+              <div>
+                <p class="profile-summary-name" id="sum-profile">—</p>
+              </div>
+            </section>
+            <section class="summary-card" aria-labelledby="footprint-title">
+              <h3 id="footprint-title">Roof footprint</h3>
+              <div class="footprint-visual">
+                <div class="footprint-diagram">
+                <img class="footprint-image" src="assets/roof-footprint.png" alt="">
+                </div>
+                <strong class="area-badge" id="sum-area">—</strong>
+              </div>
+            </section>
+            <section class="summary-card" aria-labelledby="covering-title">
+              <h3 id="covering-title">Roof covering</h3>
+              <img class="covering-preview" id="sum-covering-image" alt="">
+              <div>
+                <p class="covering-name" id="sum-covering">—</p>
+                <p class="covering-rate" id="sum-rate">—</p>
+              </div>
+            </section>
+            <section class="summary-card" aria-labelledby="height-title">
+              <h3 id="height-title">Roof height</h3>
+              <div class="height-visual">
+                <div class="height-diagram">
+                <img class="height-image" src="assets/roof-height.png" alt="">
+                <span class="height-arrow"></span>
+                <strong class="height-value" id="sum-height">—</strong>
+                </div>
+              </div>
+              <p class="summary-card-label">Ground to roof edge</p>
+            </section>
+          </div>
+          <section class="location-summary" aria-labelledby="location-title">
+            <h3 id="location-title">Location</h3>
+            <div class="location-route">
+              <div class="location-stop"><span class="location-pin" aria-hidden="true"></span><span>CRS Roofing</span></div>
+              <div class="route-connection"><strong class="distance-badge" id="sum-distance">—</strong></div>
+              <div class="location-stop"><span class="location-pin" aria-hidden="true"></span><span id="sum-postcode">—</span></div>
+            </div>
+          </section>
+          <p class="next"><strong>What happens next?</strong>Book a no-obligation site visit and we can work everything out</p>
+        </aside>
+      </div>
+  </div>
+
+  <script>
+    /* CRS Roofing pricing supplied July 2026. */
+    const PRICING = {
+      minimumArea: 10,
+      minimumEstimate: 1150,
+      materialsAllowance: 100,
+      roofProfiles: {
+        flat: { label: "Flat roof", multiplier: 1 },
+        pitched: { label: "Pitched roof", multiplier: 1.25 }
+      },
+      coverings: {
+        felt: { label: "Felt", ratePerSquareMetre: 100 },
+        plain: { label: "Plain tile", ratePerSquareMetre: 200 },
+        pan: { label: "Pan tile", ratePerSquareMetre: 100 },
+        slate: { label: "Slate", ratePerSquareMetre: 180 }
+      },
+      serviceRadiusMiles: 30,
+      sonningCommon: { latitude: 51.5176, longitude: -0.9854 }
+    };
+
+    const $ = (selector) => document.querySelector(selector);
+    const state = { step: 1, distance: 0, postcode: "", pitchedCovering: "" };
+    const money = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 });
+
+    function distanceMiles(latA, lonA, latB, lonB) {
+      const radians = value => value * Math.PI / 180;
+      const latDelta = radians(latB - latA);
+      const lonDelta = radians(lonB - lonA);
+      const a = Math.sin(latDelta / 2) ** 2 + Math.cos(radians(latA)) * Math.cos(radians(latB)) * Math.sin(lonDelta / 2) ** 2;
+      return 3958.8 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function formatPostcode(value) {
+      const compact = value.toUpperCase().replace(/\s+/g, "");
+      return compact.length > 3 ? compact.slice(0, -3) + " " + compact.slice(-3) : compact;
+    }
+
+    function roofValues() {
+      const selectedProfile = document.querySelector('input[name="profile"]:checked');
+      const selectedCovering = document.querySelector('input[name="covering"]:checked');
+      const profile = selectedProfile ? selectedProfile.value : "";
+      return {
+        width: Number($("#width").value),
+        length: Number($("#length").value),
+        height: Number($("#height").value),
+        profile,
+        covering: profile === "flat" ? "felt" : (selectedCovering ? selectedCovering.value : "")
+      };
+    }
+
+    function updateRoof() {
+      const { width, length, height, profile, covering } = roofValues();
+      const area = width * length;
+      const ready = width >= 2 && width <= 40 && length >= 2 && length <= 40 && height >= 2 && height <= 15 && Boolean(profile) && Boolean(covering);
+      $("#roof-next").disabled = !ready;
+      $("#area-readout").hidden = !(area > 0);
+      $("#area-value").textContent = (area || 0).toFixed(1) + " m²";
+    }
+
+    function syncCoverings(profile) {
+      const coveringOptions = $("#covering-options");
+      const pitchedOptions = document.querySelectorAll('[data-profile-covering="pitched"]');
+      const flatOption = document.querySelector('[data-profile-covering="flat"]');
+      const selectedCovering = document.querySelector('input[name="covering"]:checked');
+
+      if (profile === "flat") {
+        if (selectedCovering && selectedCovering.value !== "felt") state.pitchedCovering = selectedCovering.value;
+        pitchedOptions.forEach(option => {
+          option.hidden = true;
+          option.querySelector("input").disabled = true;
+          option.querySelector("input").checked = false;
+        });
+        flatOption.hidden = false;
+        flatOption.querySelector("input").disabled = false;
+        flatOption.querySelector("input").checked = true;
+        coveringOptions.classList.add("single-option");
+      } else {
+        flatOption.hidden = true;
+        flatOption.querySelector("input").checked = false;
+        flatOption.querySelector("input").disabled = true;
+        pitchedOptions.forEach(option => {
+          option.hidden = false;
+          option.querySelector("input").disabled = false;
+        });
+        if (state.pitchedCovering) {
+          const previousCovering = document.querySelector('input[name="covering"][value="' + state.pitchedCovering + '"]');
+          if (previousCovering) previousCovering.checked = true;
+        }
+        coveringOptions.classList.remove("single-option");
+      }
+
+      updateRoof();
+    }
+
+    function showStep(step) {
+      state.step = step;
+      document.querySelectorAll(".form-screen").forEach(form => form.classList.toggle("active", Number(form.dataset.step) === step));
+      document.querySelectorAll("[data-progress]").forEach(item => {
+        const number = Number(item.dataset.progress);
+        item.classList.toggle("active", number === step);
+        item.classList.toggle("done", number < step);
+        item.querySelector(".num").textContent = number < step ? "✓" : String(number);
+      });
+    }
+
+    ["#width", "#length", "#height"].forEach(id => $(id).addEventListener("input", updateRoof));
+    document.querySelectorAll('input[name="profile"]').forEach(input => input.addEventListener("change", () => syncCoverings(input.value)));
+    document.querySelectorAll('input[name="covering"]').forEach(input => input.addEventListener("change", updateRoof));
+    $("#roof-form").addEventListener("submit", event => { event.preventDefault(); if (!$("#roof-next").disabled) showStep(2); });
+    document.querySelectorAll("[data-back]").forEach(button => button.addEventListener("click", () => showStep(Number(button.dataset.back))));
+
+    $("#postcode-form").addEventListener("submit", async event => {
+      event.preventDefault();
+      const postcode = formatPostcode($("#postcode").value);
+      const notice = $("#postcode-notice");
+      const button = $("#postcode-next");
+      notice.className = "notice";
+      if (!/^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/.test(postcode)) {
+        notice.textContent = "Please enter a complete UK postcode, for example RG4 9SL.";
+        notice.classList.add("show");
+        return;
+      }
+      button.disabled = true;
+      button.textContent = "Checking your postcode…";
+      try {
+        const response = await fetch("https://api.postcodes.io/postcodes/" + encodeURIComponent(postcode.replace(/\s/g, "")));
+        if (!response.ok) throw new Error("Not found");
+        const data = await response.json();
+        state.postcode = data.result.postcode;
+        state.distance = distanceMiles(PRICING.sonningCommon.latitude, PRICING.sonningCommon.longitude, data.result.latitude, data.result.longitude);
+        $("#postcode").value = state.postcode;
+        if (state.distance > PRICING.serviceRadiusMiles) {
+          notice.textContent = state.postcode + " is around " + Math.round(state.distance) + " miles from CRS Roofing, outside our current 30-mile working area.";
+          notice.classList.add("show", "outside");
+        } else {
+          showStep(3);
+        }
+      } catch (error) {
+        notice.textContent = "We couldn’t verify that postcode. Check it and try again in a moment.";
+        notice.classList.add("show");
+      } finally {
+        button.disabled = false;
+        button.innerHTML = "Continue <span>→</span>";
+      }
+    });
+
+    $("#contact-form").addEventListener("submit", event => {
+      event.preventDefault();
+      const { width, length, height, profile, covering } = roofValues();
+      const area = width * length;
+      const profileDetails = PRICING.roofProfiles[profile];
+      const coveringDetails = PRICING.coverings[covering];
+      const calculated = area * coveringDetails.ratePerSquareMetre + PRICING.materialsAllowance;
+      const estimateBase = area <= PRICING.minimumArea ? PRICING.minimumEstimate : Math.max(PRICING.minimumEstimate, calculated);
+      const estimate = Math.round((estimateBase * profileDetails.multiplier) / 50) * 50;
+      $("#result-heading").textContent = "Your quote";
+      $("#price-estimate").textContent = money.format(estimate);
+      $("#sum-area").textContent = area.toFixed(1) + " m²";
+      $("#sum-profile").textContent = profileDetails.label;
+      $("#sum-profile-icon").className = "profile-symbol " + profile;
+      $("#sum-covering").textContent = coveringDetails.label;
+      $("#sum-rate").textContent = money.format(coveringDetails.ratePerSquareMetre) + "/m²";
+      $("#sum-height").textContent = height.toFixed(1) + " m";
+      $("#sum-postcode").textContent = state.postcode;
+      $("#sum-distance").textContent = Math.round(state.distance) + " miles";
+      const selectedCoveringImage = document.querySelector('input[name="covering"][value="' + covering + '"] + .covering-card img');
+      $("#sum-covering-image").src = selectedCoveringImage.src;
+      $("#sum-covering-image").alt = coveringDetails.label + " roofing";
+      $("#calculator").classList.add("result-mode");
+      $("#result").classList.add("show");
+      $("#calculator").scrollIntoView({ behavior: "smooth" });
+    });
+
+  </script>
+</body>
+</html>
