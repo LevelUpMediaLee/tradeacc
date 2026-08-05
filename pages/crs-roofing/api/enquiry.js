@@ -184,7 +184,7 @@ function formatMoney(value) {
   }).format(value);
 }
 
-function emailHtml(submission, calculation, receivedAt) {
+function adminEmailHtml(submission, calculation, receivedAt) {
   const roofRows = [
     ["Roof profile", calculation.profile.label],
     ["Roof covering", calculation.covering.label],
@@ -256,7 +256,7 @@ function emailHtml(submission, calculation, receivedAt) {
   ].join("");
 }
 
-function emailText(submission, calculation, receivedAt) {
+function adminEmailText(submission, calculation, receivedAt) {
   return [
     "NEW CRS ROOFING ESTIMATE ENQUIRY",
     "",
@@ -276,6 +276,110 @@ function emailText(submission, calculation, receivedAt) {
     "Received: " + receivedAt,
     "Enquiry reference: " + submission.submissionId
   ].join("\n");
+}
+
+function customerEmailHtml(submission, calculation) {
+  const summaryRows = [
+    ["Property", submission.postcode],
+    ["Roof type", calculation.profile.label],
+    ["Roof covering", calculation.covering.label],
+    ["Roof footprint", calculation.area.toFixed(1) + " m²"],
+    ["Roof height", submission.height.toFixed(1) + " m"]
+  ];
+  const tableRows = summaryRows.map(([label, value], index) => (
+    "<tr>" +
+      "<td style=\"padding:12px 14px;" + (index < summaryRows.length - 1 ? "border-bottom:1px solid #ebe7db;" : "") + "color:#746d5d;font-size:14px;line-height:1.4;vertical-align:top;\">" + escapeHtml(label) + "</td>" +
+      "<td style=\"padding:12px 14px;" + (index < summaryRows.length - 1 ? "border-bottom:1px solid #ebe7db;" : "") + "color:#333333;font-size:14px;font-weight:600;line-height:1.4;text-align:right;vertical-align:top;\">" + escapeHtml(value) + "</td>" +
+    "</tr>"
+  )).join("");
+
+  return [
+    "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"color-scheme\" content=\"light only\"><title>Your CRS Roofing rough estimate</title></head>",
+    "<body style=\"margin:0;padding:0;background:#edece8;font-family:'Avenir Next',Avenir,'Century Gothic','Helvetica Neue',Arial,sans-serif;color:#333333;\">",
+    "<div style=\"display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;\">Your CRS Roofing rough estimate is approx. " + escapeHtml(formatMoney(calculation.estimate)) + ".</div>",
+    "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:100%;background:#edece8;\"><tr><td align=\"center\" style=\"padding:32px 12px;\">",
+    "<table role=\"presentation\" width=\"640\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:100%;max-width:640px;border-collapse:separate;background:#ffffff;border-radius:14px;box-shadow:0 12px 34px rgba(51,51,51,.13);overflow:hidden;\">",
+    "<tr><td style=\"height:7px;background:#c1a961;font-size:0;line-height:0;\">&nbsp;</td></tr>",
+    "<tr><td align=\"center\" style=\"padding:26px 24px 22px;background:#333333;\">",
+    "<img src=\"" + BRAND_LOGO_URL + "\" width=\"132\" alt=\"CRS Roofing\" style=\"display:block;width:132px;max-width:45%;height:auto;margin:0 auto;border:0;\">",
+    "<p style=\"margin:18px 0 0;color:#c1a961;font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;\">Estimate confirmation</p>",
+    "<h1 style=\"margin:8px 0 0;color:#ffffff;font-size:27px;font-weight:500;line-height:1.25;letter-spacing:-.02em;\">Your rough estimate</h1>",
+    "</td></tr>",
+    "<tr><td style=\"padding:28px 28px 0;background:#ffffff;\">",
+    "<p style=\"margin:0;color:#333333;font-size:18px;font-weight:600;line-height:1.5;\">Hi " + escapeHtml(submission.name) + ",</p>",
+    "<p style=\"margin:10px 0 0;color:#666661;font-size:15px;line-height:1.6;\">Thanks for using the CRS Roofing roof estimate calculator. Based on the information you provided, your rough estimate is:</p>",
+    "</td></tr>",
+    "<tr><td style=\"padding:23px 28px 6px;background:#ffffff;\">",
+    "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:100%;background:#f3efe3;border-left:4px solid #c1a961;border-radius:10px;\"><tr><td style=\"padding:22px;\">",
+    "<p style=\"margin:0;color:#746d5d;font-size:12px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;\">Approximate cost</p>",
+    "<p style=\"margin:7px 0 0;color:#333333;font-size:38px;font-weight:700;line-height:1.15;letter-spacing:-.035em;\">Approx. " + escapeHtml(formatMoney(calculation.estimate)) + "</p>",
+    "</td></tr></table>",
+    "</td></tr>",
+    "<tr><td style=\"padding:24px 28px 0;background:#ffffff;\">",
+    "<p style=\"margin:0 0 11px;color:#746d5d;font-size:12px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;\">Your details</p>",
+    "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:100%;border-collapse:separate;border:1px solid #e2ddcf;border-radius:10px;\">",
+    tableRows,
+    "</table>",
+    "</td></tr>",
+    "<tr><td style=\"padding:24px 28px 0;background:#ffffff;\">",
+    "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:100%;background:#333333;border-radius:10px;\"><tr><td style=\"padding:22px;\">",
+    "<p style=\"margin:0;color:#c1a961;font-size:12px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;\">What happens next?</p>",
+    "<p style=\"margin:9px 0 0;color:#ffffff;font-size:17px;font-weight:500;line-height:1.5;\">Book a no-obligation site visit and we can inspect the roof and work everything out.</p>",
+    "</td></tr></table>",
+    "</td></tr>",
+    "<tr><td align=\"center\" style=\"padding:26px 28px 12px;background:#ffffff;\">",
+    "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\"><tr><td align=\"center\" bgcolor=\"#c1a961\" style=\"border-radius:8px;\"><a href=\"tel:+441182302060\" style=\"display:inline-block;padding:14px 24px;color:#292929;font-size:14px;font-weight:700;text-decoration:none;\">Call CRS Roofing · 0118 230 2060</a></td></tr></table>",
+    "<p style=\"margin:16px 0 0;color:#666661;font-size:14px;line-height:1.5;\">Or email <a href=\"mailto:info@crsroofing-reading.co.uk\" style=\"color:#8c793d;font-weight:600;\">info@crsroofing-reading.co.uk</a></p>",
+    "</td></tr>",
+    "<tr><td style=\"padding:12px 28px 28px;background:#ffffff;\">",
+    "<p style=\"margin:0;color:#88847a;font-size:12px;line-height:1.6;text-align:center;\">This estimate is a useful starting point. The final quotation will be confirmed following a site visit.</p>",
+    "</td></tr>",
+    "<tr><td align=\"center\" style=\"padding:17px 24px;background:#333333;color:#bdbdb7;font-size:11px;line-height:1.5;\">CRS Roofing · 0118 230 2060 · info@crsroofing-reading.co.uk</td></tr>",
+    "</table></td></tr></table></body></html>"
+  ].join("");
+}
+
+function customerEmailText(submission, calculation) {
+  return [
+    "YOUR CRS ROOFING ROUGH ESTIMATE",
+    "",
+    "Hi " + submission.name + ",",
+    "",
+    "Thanks for using the CRS Roofing roof estimate calculator.",
+    "",
+    "Your rough estimate: Approx. " + formatMoney(calculation.estimate),
+    "",
+    "YOUR DETAILS",
+    "Property: " + submission.postcode,
+    "Roof type: " + calculation.profile.label,
+    "Roof covering: " + calculation.covering.label,
+    "Roof footprint: " + calculation.area.toFixed(1) + " m²",
+    "Roof height: " + submission.height.toFixed(1) + " m",
+    "",
+    "WHAT HAPPENS NEXT?",
+    "Book a no-obligation site visit and we can inspect the roof and work everything out.",
+    "",
+    "This estimate is a useful starting point. The final quotation will be confirmed following a site visit.",
+    "",
+    "CRS Roofing",
+    "0118 230 2060",
+    "info@crsroofing-reading.co.uk"
+  ].join("\n");
+}
+
+async function sendResendEmail(email, idempotencyKey) {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + process.env.RESEND_API_KEY,
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey
+    },
+    body: JSON.stringify(email)
+  });
+  const data = await response.json().catch(() => null);
+
+  return { response, data };
 }
 
 export default {
@@ -337,24 +441,18 @@ export default {
         from: process.env.RESEND_FROM_EMAIL,
         to: [recipient],
         subject,
-        html: emailHtml(submission, calculation, receivedAt),
-        text: emailText(submission, calculation, receivedAt)
+        html: adminEmailHtml(submission, calculation, receivedAt),
+        text: adminEmailText(submission, calculation, receivedAt)
       };
 
       if (submission.email) {
         email.reply_to = submission.email;
       }
 
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + process.env.RESEND_API_KEY,
-          "Content-Type": "application/json",
-          "Idempotency-Key": "crs-enquiry-" + submission.submissionId
-        },
-        body: JSON.stringify(email)
-      });
-      const data = await response.json().catch(() => null);
+      const { response, data } = await sendResendEmail(
+        email,
+        "crs-enquiry-" + submission.submissionId
+      );
 
       if (!response.ok) {
         console.error("Resend rejected the CRS enquiry email.", {
@@ -365,9 +463,40 @@ export default {
         return json({ error: "We could not send your enquiry. Please try again." }, 502);
       }
 
+      let confirmationSent = false;
+      let confirmationId = null;
+
+      if (submission.email) {
+        const confirmationEmail = {
+          from: process.env.RESEND_FROM_EMAIL,
+          to: [submission.email],
+          reply_to: "CRS Roofing <info@crsroofing-reading.co.uk>",
+          subject: "Your CRS Roofing rough estimate - " + submission.postcode,
+          html: customerEmailHtml(submission, calculation),
+          text: customerEmailText(submission, calculation)
+        };
+        const confirmation = await sendResendEmail(
+          confirmationEmail,
+          "crs-confirmation-" + submission.submissionId
+        );
+
+        if (confirmation.response.ok) {
+          confirmationSent = true;
+          confirmationId = confirmation.data?.id || null;
+        } else {
+          console.error("Resend rejected the CRS customer confirmation.", {
+            status: confirmation.response.status,
+            name: confirmation.data?.name,
+            message: confirmation.data?.message
+          });
+        }
+      }
+
       return json({
         ok: true,
         enquiryId: data?.id || null,
+        confirmationSent,
+        confirmationId,
         estimate: calculation.estimate
       });
     } catch (error) {
