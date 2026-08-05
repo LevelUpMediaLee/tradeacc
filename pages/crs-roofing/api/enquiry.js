@@ -1,5 +1,6 @@
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_REQUESTS = 8;
+const BRAND_LOGO_URL = "https://crs-roofing.ta-partner.co.uk/assets/crs-logo.png";
 const rateBuckets = new Map();
 
 const PRICING = {
@@ -184,48 +185,74 @@ function formatMoney(value) {
 }
 
 function emailHtml(submission, calculation, receivedAt) {
-  const rows = [
-    ["Name", submission.name],
-    ["Phone", submission.phone],
-    ["Email", submission.email || "Not provided"],
-    ["Property postcode", submission.postcode],
-    ["Distance from CRS Roofing", Math.round(submission.distance) + " miles"],
+  const roofRows = [
     ["Roof profile", calculation.profile.label],
     ["Roof covering", calculation.covering.label],
     ["Roof width", submission.width.toFixed(1) + " m"],
     ["Roof length", submission.length.toFixed(1) + " m"],
     ["Roof footprint", calculation.area.toFixed(1) + " m²"],
-    ["Roof height", submission.height.toFixed(1) + " m"],
-    ["Rough estimate", "Approx. " + formatMoney(calculation.estimate)],
-    ["Consent", "Confirmed"],
-    ["Received", receivedAt]
+    ["Roof height", submission.height.toFixed(1) + " m"]
   ];
 
-  const tableRows = rows.map(([label, value]) => (
+  const tableRows = roofRows.map(([label, value], index) => (
     "<tr>" +
-      "<td style=\"padding:10px 12px;border-bottom:1px solid #e8e2d2;color:#6f6650;font-size:14px;vertical-align:top;\">" +
+      "<td style=\"padding:11px 14px;" + (index < roofRows.length - 1 ? "border-bottom:1px solid #ebe7db;" : "") + "color:#746d5d;font-size:14px;line-height:1.4;vertical-align:top;\">" +
         escapeHtml(label) +
       "</td>" +
-      "<td style=\"padding:10px 12px;border-bottom:1px solid #e8e2d2;color:#333333;font-size:14px;font-weight:600;vertical-align:top;\">" +
+      "<td style=\"padding:11px 14px;" + (index < roofRows.length - 1 ? "border-bottom:1px solid #ebe7db;" : "") + "color:#333333;font-size:14px;font-weight:600;line-height:1.4;text-align:right;vertical-align:top;\">" +
         escapeHtml(value) +
       "</td>" +
     "</tr>"
   )).join("");
 
+  const customerEmail = submission.email || "Not provided";
+  const customerEmailHtml = submission.email
+    ? "<a href=\"mailto:" + escapeHtml(submission.email) + "\" style=\"color:#333333;text-decoration:none;\">" + escapeHtml(submission.email) + "</a>"
+    : escapeHtml(customerEmail);
+
   return [
-    "<!doctype html><html><body style=\"margin:0;background:#f4f2ec;font-family:Arial,Helvetica,sans-serif;color:#333333;\">",
-    "<div style=\"max-width:680px;margin:0 auto;padding:24px;\">",
-    "<div style=\"background:#333333;padding:24px 28px;border-radius:12px 12px 0 0;\">",
-    "<p style=\"margin:0;color:#c1a961;font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;\">CRS Roofing</p>",
-    "<h1 style=\"margin:8px 0 0;color:#ffffff;font-size:25px;line-height:1.25;\">New roof estimate enquiry</h1>",
-    "</div>",
-    "<div style=\"background:#ffffff;padding:24px 28px;border-radius:0 0 12px 12px;\">",
-    "<p style=\"margin:0 0 20px;color:#555555;font-size:15px;line-height:1.5;\">A customer completed the CRS Roofing calculator and consented to being contacted.</p>",
-    "<table role=\"presentation\" style=\"width:100%;border-collapse:collapse;border:1px solid #e8e2d2;border-radius:8px;\">",
+    "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><meta name=\"color-scheme\" content=\"light only\"><title>New CRS Roofing enquiry</title></head>",
+    "<body style=\"margin:0;padding:0;background:#edece8;font-family:'Avenir Next',Avenir,'Century Gothic','Helvetica Neue',Arial,sans-serif;color:#333333;\">",
+    "<div style=\"display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;\">New CRS Roofing estimate enquiry from " + escapeHtml(submission.name) + " in " + escapeHtml(submission.postcode) + ".</div>",
+    "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:100%;background:#edece8;\"><tr><td align=\"center\" style=\"padding:32px 12px;\">",
+    "<table role=\"presentation\" width=\"640\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:100%;max-width:640px;border-collapse:separate;background:#ffffff;border-radius:14px;box-shadow:0 12px 34px rgba(51,51,51,.13);overflow:hidden;\">",
+    "<tr><td style=\"height:7px;background:#c1a961;font-size:0;line-height:0;\">&nbsp;</td></tr>",
+    "<tr><td align=\"center\" style=\"padding:26px 24px 22px;background:#333333;\">",
+    "<img src=\"" + BRAND_LOGO_URL + "\" width=\"132\" alt=\"CRS Roofing\" style=\"display:block;width:132px;max-width:45%;height:auto;margin:0 auto;border:0;\">",
+    "<p style=\"margin:18px 0 0;color:#c1a961;font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;\">Website estimate calculator</p>",
+    "<h1 style=\"margin:8px 0 0;color:#ffffff;font-size:27px;font-weight:500;line-height:1.25;letter-spacing:-.02em;\">New roofing enquiry</h1>",
+    "</td></tr>",
+    "<tr><td style=\"padding:28px 28px 10px;background:#ffffff;\">",
+    "<p style=\"margin:0;color:#777064;font-size:13px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;\">Rough estimate</p>",
+    "<p style=\"margin:7px 0 0;color:#333333;font-size:38px;font-weight:700;line-height:1.15;letter-spacing:-.035em;\">Approx. " + escapeHtml(formatMoney(calculation.estimate)) + "</p>",
+    "<p style=\"margin:8px 0 0;color:#6d6d68;font-size:14px;line-height:1.5;\">Submitted " + escapeHtml(receivedAt) + "</p>",
+    "</td></tr>",
+    "<tr><td style=\"padding:18px 28px 0;background:#ffffff;\">",
+    "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:100%;border-collapse:separate;background:#f3efe3;border-left:4px solid #c1a961;border-radius:10px;\"><tr><td style=\"padding:20px;\">",
+    "<p style=\"margin:0 0 10px;color:#746d5d;font-size:12px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;\">Customer details</p>",
+    "<p style=\"margin:0;color:#333333;font-size:22px;font-weight:600;line-height:1.3;\">" + escapeHtml(submission.name) + "</p>",
+    "<p style=\"margin:12px 0 0;color:#333333;font-size:15px;line-height:1.6;\"><a href=\"tel:" + escapeHtml(submission.phone) + "\" style=\"color:#333333;font-weight:600;text-decoration:none;\">" + escapeHtml(submission.phone) + "</a><br>" + customerEmailHtml + "</p>",
+    "</td></tr></table>",
+    "</td></tr>",
+    "<tr><td style=\"padding:24px 28px 0;background:#ffffff;\">",
+    "<p style=\"margin:0 0 11px;color:#746d5d;font-size:12px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;\">Property</p>",
+    "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:100%;border-collapse:separate;background:#333333;border-radius:10px;\"><tr>",
+    "<td style=\"width:50%;padding:17px 18px;border-right:1px solid #555555;vertical-align:top;\"><span style=\"display:block;color:#bdbdb7;font-size:12px;line-height:1.3;\">Postcode</span><strong style=\"display:block;margin-top:4px;color:#ffffff;font-size:17px;font-weight:600;line-height:1.3;\">" + escapeHtml(submission.postcode) + "</strong></td>",
+    "<td style=\"width:50%;padding:17px 18px;vertical-align:top;\"><span style=\"display:block;color:#bdbdb7;font-size:12px;line-height:1.3;\">From CRS Roofing</span><strong style=\"display:block;margin-top:4px;color:#c1a961;font-size:17px;font-weight:600;line-height:1.3;\">" + Math.round(submission.distance) + " miles</strong></td>",
+    "</tr></table>",
+    "</td></tr>",
+    "<tr><td style=\"padding:24px 28px 0;background:#ffffff;\">",
+    "<p style=\"margin:0 0 11px;color:#746d5d;font-size:12px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;\">Roof summary</p>",
+    "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"width:100%;border-collapse:separate;border:1px solid #e2ddcf;border-radius:10px;\">",
     tableRows,
     "</table>",
-    "<p style=\"margin:22px 0 0;font-size:13px;color:#777064;\">Enquiry reference: " + escapeHtml(submission.submissionId) + "</p>",
-    "</div></div></body></html>"
+    "</td></tr>",
+    "<tr><td align=\"center\" style=\"padding:26px 28px 30px;background:#ffffff;\">",
+    "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\"><tr><td align=\"center\" bgcolor=\"#c1a961\" style=\"border-radius:8px;\"><a href=\"tel:" + escapeHtml(submission.phone) + "\" style=\"display:inline-block;padding:14px 24px;color:#292929;font-size:14px;font-weight:700;text-decoration:none;\">Call " + escapeHtml(submission.name) + " · " + escapeHtml(submission.phone) + "</a></td></tr></table>",
+    "<p style=\"margin:19px 0 0;color:#88847a;font-size:11px;line-height:1.5;\">Contact consent confirmed · Reference " + escapeHtml(submission.submissionId) + "</p>",
+    "</td></tr>",
+    "<tr><td align=\"center\" style=\"padding:17px 24px;background:#333333;color:#bdbdb7;font-size:11px;line-height:1.5;\">CRS Roofing · 0118 230 2060 · info@crsroofing-reading.co.uk</td></tr>",
+    "</table></td></tr></table></body></html>"
   ].join("");
 }
 

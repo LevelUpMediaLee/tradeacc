@@ -8,7 +8,7 @@ Vercel Root Directory: pages/crs-roofing
 Required Vercel environment variables:
 
 - RESEND_API_KEY
-- RESEND_FROM_EMAIL, using an address at a domain verified in Resend
+- RESEND_FROM_EMAIL, set to `CRS Roofing <quotes@ta-partner.co.uk>`
 
 Optional:
 
