@@ -359,7 +359,8 @@ export default {
       if (!response.ok) {
         console.error("Resend rejected the CRS enquiry email.", {
           status: response.status,
-          name: data?.name
+          name: data?.name,
+          message: data?.message
         });
         return json({ error: "We could not send your enquiry. Please try again." }, 502);
       }
