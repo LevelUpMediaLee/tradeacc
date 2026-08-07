@@ -265,7 +265,7 @@ async function getHighLevelPipelineTarget() {
   return highLevelPipelineTargetPromise;
 }
 
-async function syncHighLevelLead(submission) {
+async function syncHighLevelLead(submission, calculation) {
   if (!process.env.GHL_PRIVATE_INTEGRATION_TOKEN || !process.env.GHL_LOCATION_ID) {
     throw new Error("HighLevel is missing its token or location ID.");
   }
@@ -313,7 +313,8 @@ async function syncHighLevelLead(submission) {
         contactId,
         name: submission.name + " - CRS Roofing website enquiry",
         status: "open",
-        source: HIGHLEVEL_SOURCE
+        source: HIGHLEVEL_SOURCE,
+        monetaryValue: calculation.estimate
       })
     })
   ]);
@@ -607,7 +608,7 @@ export default {
       let crmSynced = false;
 
       try {
-        await syncHighLevelLead(submission);
+        await syncHighLevelLead(submission, calculation);
         crmSynced = true;
       } catch (error) {
         console.error("HighLevel rejected the CRS Roofing lead.", {

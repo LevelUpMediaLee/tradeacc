@@ -101,7 +101,8 @@ test("sends a calculator contact and new lead opportunity to HighLevel", async (
       contactId: "contact-123",
       name: "Test Customer - CRS Roofing website enquiry",
       status: "open",
-      source: "CRS Roofing Website Calculator"
+      source: "CRS Roofing Website Calculator",
+      monetaryValue: 6900
     });
   } finally {
     globalThis.fetch = originalFetch;
