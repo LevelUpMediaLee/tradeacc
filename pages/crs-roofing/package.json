@@ -8,6 +8,7 @@
     "node": "24.x"
   },
   "scripts": {
-    "check": "node --check api/enquiry.js"
+    "check": "node --check api/enquiry.js",
+    "test": "node --test api/enquiry.test.js"
   }
 }

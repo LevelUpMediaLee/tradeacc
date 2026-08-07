@@ -1,7 +1,14 @@
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT_REQUESTS = 8;
 const BRAND_LOGO_URL = "https://crs-roofing.ta-partner.co.uk/assets/crs-logo.png";
+const HIGHLEVEL_API_URL = "https://services.leadconnectorhq.com";
+const HIGHLEVEL_API_VERSION = "2021-07-28";
+const HIGHLEVEL_CONTACT_TAG = "CRS Roofing Calculator";
+const HIGHLEVEL_SOURCE = "CRS Roofing Website Calculator";
+const HIGHLEVEL_PIPELINE_NAME = "Sales";
+const HIGHLEVEL_STAGE_NAME = "NEW LEAD";
 const rateBuckets = new Map();
+let highLevelPipelineTargetPromise = null;
 
 const PRICING = {
   minimumArea: 10,
@@ -182,6 +189,140 @@ function formatMoney(value) {
     currency: "GBP",
     maximumFractionDigits: 0
   }).format(value);
+}
+
+async function highLevelRequest(path, options = {}) {
+  const response = await fetch(HIGHLEVEL_API_URL + path, {
+    ...options,
+    headers: {
+      "Accept": "application/json",
+      "Authorization": "Bearer " + process.env.GHL_PRIVATE_INTEGRATION_TOKEN,
+      "Content-Type": "application/json",
+      "Version": HIGHLEVEL_API_VERSION,
+      ...options.headers
+    },
+    signal: AbortSignal.timeout(5_000)
+  });
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const error = new Error("HighLevel request failed with status " + response.status + ".");
+    error.status = response.status;
+    error.details = data?.message || data?.error || null;
+    throw error;
+  }
+
+  return data;
+}
+
+function normaliseHighLevelName(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+async function findHighLevelPipelineTarget() {
+  if (process.env.GHL_PIPELINE_ID && process.env.GHL_PIPELINE_STAGE_ID) {
+    return {
+      pipelineId: process.env.GHL_PIPELINE_ID,
+      pipelineStageId: process.env.GHL_PIPELINE_STAGE_ID
+    };
+  }
+
+  const locationId = process.env.GHL_LOCATION_ID;
+  const data = await highLevelRequest(
+    "/opportunities/pipelines?locationId=" + encodeURIComponent(locationId)
+  );
+  const pipelineName = process.env.GHL_PIPELINE_NAME || HIGHLEVEL_PIPELINE_NAME;
+  const stageName = process.env.GHL_PIPELINE_STAGE_NAME || HIGHLEVEL_STAGE_NAME;
+  const pipeline = data?.pipelines?.find((item) => (
+    normaliseHighLevelName(item?.name) === normaliseHighLevelName(pipelineName)
+  ));
+
+  if (!pipeline) {
+    throw new Error("HighLevel pipeline '" + pipelineName + "' was not found.");
+  }
+
+  const stage = pipeline.stages?.find((item) => (
+    normaliseHighLevelName(item?.name) === normaliseHighLevelName(stageName)
+  ));
+
+  if (!stage) {
+    throw new Error(
+      "HighLevel stage '" + stageName + "' was not found in pipeline '" + pipelineName + "'."
+    );
+  }
+
+  return { pipelineId: pipeline.id, pipelineStageId: stage.id };
+}
+
+async function getHighLevelPipelineTarget() {
+  if (!highLevelPipelineTargetPromise) {
+    highLevelPipelineTargetPromise = findHighLevelPipelineTarget().catch((error) => {
+      highLevelPipelineTargetPromise = null;
+      throw error;
+    });
+  }
+
+  return highLevelPipelineTargetPromise;
+}
+
+async function syncHighLevelLead(submission) {
+  if (!process.env.GHL_PRIVATE_INTEGRATION_TOKEN || !process.env.GHL_LOCATION_ID) {
+    throw new Error("HighLevel is missing its token or location ID.");
+  }
+
+  const locationId = process.env.GHL_LOCATION_ID;
+  const contactPayload = {
+    locationId,
+    name: submission.name,
+    phone: submission.phone,
+    postalCode: submission.postcode,
+    country: "GB",
+    source: HIGHLEVEL_SOURCE,
+    createNewIfDuplicateAllowed: false
+  };
+
+  if (submission.email) {
+    contactPayload.email = submission.email;
+  }
+
+  const [contactResult, pipelineTarget] = await Promise.all([
+    highLevelRequest("/contacts/upsert", {
+      method: "POST",
+      body: JSON.stringify(contactPayload)
+    }),
+    getHighLevelPipelineTarget()
+  ]);
+  const contactId = contactResult?.contact?.id;
+
+  if (!contactId) {
+    throw new Error("HighLevel did not return a contact ID.");
+  }
+
+  const contactTag = process.env.GHL_CONTACT_TAG || HIGHLEVEL_CONTACT_TAG;
+  const [, opportunityResult] = await Promise.all([
+    highLevelRequest("/contacts/" + encodeURIComponent(contactId) + "/tags", {
+      method: "POST",
+      body: JSON.stringify({ tags: [contactTag] })
+    }),
+    highLevelRequest("/opportunities/upsert", {
+      method: "POST",
+      body: JSON.stringify({
+        pipelineId: pipelineTarget.pipelineId,
+        pipelineStageId: pipelineTarget.pipelineStageId,
+        locationId,
+        contactId,
+        name: submission.name + " - CRS Roofing website enquiry",
+        status: "open",
+        source: HIGHLEVEL_SOURCE
+      })
+    })
+  ]);
+
+  return {
+    contactId,
+    opportunityId: opportunityResult?.opportunity?.id || null,
+    contactCreated: contactResult?.new === true
+  };
 }
 
 function adminEmailHtml(submission, calculation, receivedAt) {
@@ -463,6 +604,20 @@ export default {
         return json({ error: "We could not send your enquiry. Please try again." }, 502);
       }
 
+      let crmSynced = false;
+
+      try {
+        await syncHighLevelLead(submission);
+        crmSynced = true;
+      } catch (error) {
+        console.error("HighLevel rejected the CRS Roofing lead.", {
+          name: error?.name,
+          message: error?.message,
+          status: error?.status,
+          details: error?.details
+        });
+      }
+
       let confirmationSent = false;
       let confirmationId = null;
 
@@ -497,6 +652,7 @@ export default {
         enquiryId: data?.id || null,
         confirmationSent,
         confirmationId,
+        crmSynced,
         estimate: calculation.estimate
       });
     } catch (error) {
