@@ -728,8 +728,38 @@
     };
 
     const $ = (selector) => document.querySelector(selector);
-    const state = { step: 1, distance: 0, postcode: "", pitchedCovering: "", submissionId: "" };
+    const state = {
+      step: 1,
+      distance: 0,
+      postcode: "",
+      pitchedCovering: "",
+      submissionId: "",
+      metaQuoteStartedTracked: false,
+      metaLeadTracked: false
+    };
     const money = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 });
+
+    function trackMetaQuoteStarted() {
+      if (state.metaQuoteStartedTracked || typeof window.fbq !== "function") return;
+
+      window.fbq("trackCustom", "QuoteStarted", {
+        content_name: "CRS Roofing Quote Calculator",
+        content_category: "Roofing"
+      });
+      state.metaQuoteStartedTracked = true;
+    }
+
+    function trackMetaLead() {
+      if (state.metaLeadTracked || typeof window.fbq !== "function") return;
+
+      window.fbq("track", "Lead", {
+        content_name: "Roofing Quote Request",
+        content_category: "Roofing"
+      }, {
+        eventID: state.submissionId
+      });
+      state.metaLeadTracked = true;
+    }
 
     function distanceMiles(latA, lonA, latB, lonB) {
       const radians = value => value * Math.PI / 180;
@@ -815,7 +845,13 @@
     ["#width", "#length", "#height"].forEach(id => $(id).addEventListener("input", updateRoof));
     document.querySelectorAll('input[name="profile"]').forEach(input => input.addEventListener("change", () => syncCoverings(input.value)));
     document.querySelectorAll('input[name="covering"]').forEach(input => input.addEventListener("change", updateRoof));
-    $("#roof-form").addEventListener("submit", event => { event.preventDefault(); if (!$("#roof-next").disabled) showStep(2); });
+    $("#roof-form").addEventListener("submit", event => {
+      event.preventDefault();
+      if (!$("#roof-next").disabled) {
+        trackMetaQuoteStarted();
+        showStep(2);
+      }
+    });
     document.querySelectorAll("[data-back]").forEach(button => button.addEventListener("click", () => showStep(Number(button.dataset.back))));
 
     $("#postcode-form").addEventListener("submit", async event => {
@@ -926,6 +962,7 @@
         }
 
         if (Number.isFinite(data.estimate)) quote.estimate = data.estimate;
+        trackMetaLead();
         revealEstimate(quote);
       } catch (error) {
         notice.textContent = error.message + " If it keeps happening, call CRS Roofing on 0118 230 2060.";
